@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unlock Challenge — FocusGuard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080b12; --surface: rgba(255,255,255,0.04); --surface2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08); --border-active: rgba(255,255,255,0.2);
+    --text: #f0f2f8; --muted: rgba(240,242,248,0.45);
+    --accent: #6ee7b7; --accent2: #818cf8; --danger: #f87171; --warn: #fbbf24;
+  }
+  html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.12; }
+  .orb1 { width: 400px; height: 400px; background: #f87171; top: -80px; right: -80px; }
+  .orb2 { width: 350px; height: 350px; background: #818cf8; bottom: -60px; left: -60px; }
+  .noise { position: fixed; inset: 0; z-index: 0; opacity: 0.025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); background-size: 200px 200px; }
+  .page { position: relative; z-index: 1; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 2.5rem; max-width: 520px; width: 100%; backdrop-filter: blur(24px); box-shadow: 0 0 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .step { display: none; }
+  .step.active { display: block; animation: stepIn 0.3s ease both; }
+  @keyframes stepIn { from { opacity: 0; transform: translateX(15px); } to { opacity: 1; transform: translateX(0); } }
+  .header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .header-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .header-text h2 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .header-text p { font-size: 0.8rem; color: var(--muted); }
+  .progress-bar { display: flex; gap: 6px; margin-bottom: 2rem; }
+  .progress-dot { height: 3px; flex: 1; border-radius: 100px; background: var(--border); transition: background 0.3s ease; }
+  .progress-dot.done { background: var(--accent); }
+  .progress-dot.active { background: var(--accent2); }
+  h3 { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.6rem; }
+  .step-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.5rem; }
+  .challenge-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--accent); text-align: center; letter-spacing: 0.02em; line-height: 1.5; }
+  .input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1rem; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.95rem; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; margin-bottom: 1rem; }
+  .input:focus { border-color: var(--border-active); box-shadow: 0 0 0 3px rgba(129,140,248,0.1); }
+  .input.error { border-color: rgba(248,113,113,0.5) !important; box-shadow: 0 0 0 3px rgba(248,113,113,0.1); animation: shake 0.4s ease; }
+  .input.success { border-color: rgba(110,231,183,0.5); box-shadow: 0 0 0 3px rgba(110,231,183,0.1); }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+  .error-msg { font-size: 0.8rem; color: var(--danger); margin-top: -0.5rem; margin-bottom: 0.75rem; display: none; }
+  .error-msg.show { display: block; }
+  .timer-ring { width: 120px; height: 120px; margin: 0 auto 1.5rem; position: relative; }
+  .timer-ring svg { transform: rotate(-90deg); width: 120px; height: 120px; }
+  .timer-ring-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+  .timer-ring-fill { fill: none; stroke: var(--accent2); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
+  .timer-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: var(--accent2); }
+  .btn { width: 100%; padding: 0.9rem 2rem; border-radius: 12px; border: none; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; position: relative; letter-spacing: 0.02em; margin-top: 0.5rem; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-primary { background: linear-gradient(135deg, #6ee7b7, #34d399); color: #064e3b; box-shadow: 0 4px 20px rgba(110,231,183,0.25); }
+  .btn-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(110,231,183,0.35); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; font-weight: 400; font-family: 'DM Sans', sans-serif; margin-top: 0.75rem; }
+  .btn-ghost:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+  .btn-danger { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: var(--danger); }
+  .btn-danger:not(:disabled):hover { background: rgba(248,113,113,0.15); border-color: rgba(248,113,113,0.35); }
+  .warning-box { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 12px; padding: 1rem; font-size: 0.82rem; color: var(--warn); line-height: 1.55; margin-bottom: 1.5rem; }
+  .warning-box strong { display: block; margin-bottom: 0.25rem; font-family: 'Syne', sans-serif; }
+  .success-icon { font-size: 3rem; text-align: center; margin: 1rem 0; animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  @keyframes successPop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+  .duration-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+  .duration-btn { padding: 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--muted); transition: all 0.15s; }
+  .duration-btn:hover { border-color: rgba(110,231,183,0.3); color: var(--accent); }
+  .attempt-log { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 1rem; font-family: 'DM Mono', monospace; }
+  .password-wrap { position: relative; margin-bottom: 1rem; }
+  .password-wrap .input { margin-bottom: 0; padding-right: 3rem; }
+  .toggle-pw { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0; transition: color 0.2s; }
+  .toggle-pw:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="bg-orbs"><div class="orb orb1"></div><div class="orb orb2"></div></div>
+<div class="noise"></div>
+<div class="page">
+  <div class="card">
+    <div class="header">
+      <div class="header-icon">🔓</div>
+      <div class="header-text">
+        <h2>Unlock Challenge</h2>
+        <p>Complete all steps to temporarily disable blocking</p>
+      </div>
+    </div>
+    <div class="progress-bar" id="progress-bar"></div>
+
+    <!-- Step: Password -->
+    <div class="step" id="step-password">
+      <h3>Enter Your Focus Password</h3>
+      <p class="step-desc">You set up a master password to protect your focus sessions. Enter it to continue.</p>
+      <div class="password-wrap">
+        <input type="password" class="input" id="pw-input" placeholder="Enter password...">
+        <button class="toggle-pw" id="toggle-pw" type="button">👁</button>
+      </div>
+      <div class="error-msg" id="pw-error">Incorrect password. Try again.</div>
+      <button class="btn btn-primary" id="pw-submit">Verify Password →</button>
+    </div>
+
+    <!-- Step: Math -->
+    <div class="step" id="step-math">
+      <h3>Solve the Puzzle</h3>
+      <p class="step-desc">Prove you're making a conscious, deliberate decision to take a break.</p>
+      <div class="challenge-box" id="math-problem"></div>
+      <input type="number" class="input" id="math-input" placeholder="Your answer...">
+      <div class="error-msg" id="math-error"></div>
+      <button class="btn btn-primary" id="math-submit">Submit Answer →</button>
+    </div>
+
+    <!-- Step: Quote -->
+    <div class="step" id="step-quote">
+      <h3>Type This Phrase</h3>
+      <p class="step-desc">Type the following exactly as shown, character for character:</p>
+      <div class="challenge-box" id="quote-prompt"></div>
+      <input type="text" class="input" id="quote-input" placeholder="Type it here..." autocomplete="off" spellcheck="false">
+      <div class="error-msg" id="quote-error">That doesn't match. Try again.</div>
+      <button class="btn btn-primary" id="quote-submit">Confirm Intention →</button>
+    </div>
+
+    <!-- Step: Timer -->
+    <div class="step" id="step-timer">
+      <h3>Reflect for a Moment</h3>
+      <p class="step-desc">Take a moment to think about what you actually need to accomplish today. The button will unlock when the timer ends.</p>
+      <div class="timer-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="timer-ring-bg" cx="50" cy="50" r="45"/>
+          <circle class="timer-ring-fill" id="timer-fill" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="timer-center" id="timer-seconds">30</div>
+      </div>
+      <button class="btn btn-primary" id="timer-btn" disabled>Waiting...</button>
+    </div>
+
+    <!-- Step: Confirm -->
+    <div class="step" id="step-confirm">
+      <h3>Choose Your Break Duration</h3>
+      <p class="step-desc">How long do you need? Blocking will automatically re-enable after this period.</p>
+      <div class="warning-box">
+        <strong>⚠️ Remember</strong>
+        You've attempted to access blocked sites <span id="confirm-attempts">0</span> times today.
+        You are choosing to override your own focus goals. Are you sure?
+      </div>
+      <div class="duration-grid">
+        <button class="duration-btn" data-mins="5">5 min</button>
+        <button class="duration-btn" data-mins="10">10 min</button>
+        <button class="duration-btn" data-mins="15">15 min</button>
+        <button class="duration-btn" data-mins="30">30 min</button>
+      </div>
+      <button class="btn btn-danger" id="confirm-unblock" disabled>Select a duration above</button>
+    </div>
+
+    <!-- Step: Done -->
+    <div class="step" id="step-done">
+      <div class="success-icon">✅</div>
+      <h3 style="text-align:center">Break Unlocked</h3>
+      <p class="step-desc" style="text-align:center">Blocking has been paused for <strong id="done-minutes">10</strong> minutes.
+      Make it count. FocusGuard will re-enable automatically.</p>
+      <button class="btn btn-primary" id="done-close" style="margin-top:1.5rem">Close &amp; Enjoy Break →</button>
+      <div class="attempt-log" id="attempt-log-text"></div>
+    </div>
+
+    <button class="btn btn-ghost" id="btn-cancel">✕ Cancel — Stay Focused</button>
+  </div>
+</div>
+<script src="challenge.js"></script>
+</body>
+</html>

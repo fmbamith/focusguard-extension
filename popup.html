@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusGuard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0c0f18; --surface: rgba(255,255,255,0.04); --surface2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08); --text: #f0f2f8; --muted: rgba(240,242,248,0.45);
+    --accent: #6ee7b7; --accent2: #818cf8; --danger: #f87171;
+  }
+  body { width: 340px; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; padding: 1.25rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .logo { display: flex; align-items: center; gap: 0.5rem; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; }
+  .logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, #6ee7b7, #818cf8); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .status-pill { font-size: 0.65rem; font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.25rem 0.6rem; border-radius: 100px; }
+  .status-active { background: rgba(110,231,183,0.12); color: var(--accent); border: 1px solid rgba(110,231,183,0.2); }
+  .status-paused { background: rgba(248,113,113,0.12); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
+  .status-focus { background: rgba(129,140,248,0.12); color: var(--accent2); border: 1px solid rgba(129,140,248,0.2); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem; text-align: center; }
+  .stat-val { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--accent); display: block; line-height: 1.2; }
+  .stat-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .blocked-list { margin-bottom: 1rem; }
+  .blocked-item { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .blocked-item:last-child { border-bottom: none; }
+  .blocked-domain { color: var(--text); }
+  .blocked-count { font-family: 'Syne', sans-serif; font-size: 0.7rem; color: var(--danger); font-weight: 600; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .btn { padding: 0.6rem 0.75rem; border-radius: 9px; border: none; font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease; letter-spacing: 0.02em; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #6ee7b7, #34d399); color: #064e3b; }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.15); }
+  .btn-full { width: 100%; padding: 0.7rem; background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.78rem; cursor: pointer; border-radius: 10px; transition: all 0.15s; text-align: center; }
+  .btn-full:hover { border-color: rgba(255,255,255,0.15); color: var(--text); background: var(--surface); }
+  .timer-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; margin-bottom: 0.75rem; display: none; }
+  .timer-bar.show { display: block; }
+  .timer-label { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--accent2); margin-bottom: 0.4rem; display: flex; justify-content: space-between; }
+  .timer-track { height: 4px; background: var(--border); border-radius: 100px; overflow: hidden; }
+  .timer-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 100px; transition: width 1s linear; }
+  .session-modal { display: none; position: fixed; inset: 0; background: rgba(8,11,18,0.95); z-index: 100; align-items: center; justify-content: center; padding: 1.25rem; }
+  .session-modal.show { display: flex; }
+  .session-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; width: 100%; }
+  .session-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  .session-card p { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.5; }
+  .session-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+  .session-opt { padding: 0.5rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 600; color: var(--muted); transition: all 0.15s; user-select: none; }
+  .session-opt:hover, .session-opt.selected { border-color: rgba(129,140,248,0.4); color: var(--accent2); background: rgba(129,140,248,0.08); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"><div class="logo-icon">🛡️</div>FocusGuard</div>
+  <div class="status-pill status-active" id="status-pill">Active</div>
+</div>
+<div class="stat-row">
+  <div class="stat"><span class="stat-val" id="stat-today">0</span><div class="stat-lbl">Blocked Today</div></div>
+  <div class="stat"><span class="stat-val" id="stat-sites">4</span><div class="stat-lbl">Sites Blocked</div></div>
+  <div class="stat"><span class="stat-val" id="stat-total">0</span><div class="stat-lbl">All Time</div></div>
+</div>
+<div class="timer-bar" id="timer-bar">
+  <div class="timer-label"><span id="timer-label-text">Focus Session</span><span id="timer-remaining">--:--</span></div>
+  <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+</div>
+<div class="section-title">Recent Blocks</div>
+<div class="blocked-list" id="blocked-list">
+  <div class="blocked-item" style="color:var(--muted);font-size:0.78rem">No attempts yet today</div>
+</div>
+<div class="actions">
+  <button class="btn btn-primary" id="btn-focus">🎯 Focus Session</button>
+  <button class="btn btn-secondary" id="btn-options">⚙️ Settings</button>
+</div>
+<button class="btn-full" id="btn-unblock-link">Need a break? — Open Unlock Challenge</button>
+
+<div class="session-modal" id="session-modal">
+  <div class="session-card">
+    <h3>Start Focus Session 🎯</h3>
+    <p>Block distractions for a set period. Early cancellation requires the full unlock challenge.</p>
+    <div class="session-options">
+      <div class="session-opt" data-mins="25">25 min<br><small style="font-size:0.65rem;font-weight:400">Pomodoro</small></div>
+      <div class="session-opt" data-mins="45">45 min</div>
+      <div class="session-opt" data-mins="60">1 hour</div>
+      <div class="session-opt" data-mins="90">90 min</div>
+    </div>
+    <button class="btn btn-primary" id="start-session-btn" style="width:100%;margin-bottom:0.5rem" disabled>Start Session</button>
+    <button class="btn-full" id="modal-cancel">Cancel</button>
+  </div>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>

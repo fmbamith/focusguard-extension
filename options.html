@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusGuard Settings</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080b12;
+    --bg2: #0d1120;
+    --surface: rgba(255,255,255,0.04);
+    --surface2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-active: rgba(255,255,255,0.18);
+    --text: #f0f2f8;
+    --muted: rgba(240,242,248,0.45);
+    --muted2: rgba(240,242,248,0.25);
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --danger: #f87171;
+    --warn: #fbbf24;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 10;
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-icon {
+    width: 34px;
+    height: 34px;
+    background: linear-gradient(135deg, #6ee7b7, #818cf8);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .logo-sub {
+    font-size: 0.6rem;
+    color: var(--muted2);
+    font-weight: 400;
+  }
+
+  .nav-section {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding: 0.5rem 0.5rem 0.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    text-decoration: none;
+  }
+
+  .nav-item:hover {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .nav-item.active {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(110,231,183,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(110,231,183,0); }
+  }
+
+  /* Main content */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    padding: 2.5rem;
+    overflow-y: auto;
+    height: 100vh;
+  }
+
+  .section {
+    display: none;
+    max-width: 700px;
+  }
+
+  .section.active { display: block; }
+
+  .section-header {
+    margin-bottom: 2rem;
+  }
+
+  .section-header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+    line-height: 1.2;
+  }
+
+  .section-header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .card-subtitle {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  /* Tags */
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.3rem 0.75rem 0.3rem 0.9rem;
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+    transition: border-color 0.15s;
+  }
+
+  .tag:hover { border-color: rgba(248,113,113,0.3); }
+
+  .tag-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.15s;
+  }
+
+  .tag-delete:hover { background: rgba(248,113,113,0.2); color: var(--danger); }
+
+  .add-input-row {
+    display: flex;
+    gap: 0.5rem;
+    position: relative;
+  }
+
+  .input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .input:focus {
+    border-color: var(--border-active);
+    box-shadow: 0 0 0 3px rgba(129,140,248,0.1);
+  }
+
+  .input::placeholder { color: var(--muted2); }
+
+  .autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #1a1f2e;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+
+  .autocomplete-dropdown.show { display: block; }
+
+  .ac-item {
+    padding: 0.6rem 1rem;
+    font-size: 0.82rem;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    transition: background 0.1s;
+    color: var(--muted);
+  }
+
+  .ac-item:hover { background: var(--surface2); color: var(--text); }
+
+  .btn {
+    padding: 0.7rem 1.25rem;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:active:not(:disabled) { transform: scale(0.97); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #6ee7b7, #34d399);
+    color: #064e3b;
+    box-shadow: 0 4px 15px rgba(110,231,183,0.2);
+  }
+
+  .btn-primary:not(:disabled):hover { filter: brightness(1.05); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover { border-color: var(--border-active); color: var(--text); }
+
+  .btn-danger {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.2);
+    color: var(--danger);
+  }
+
+  .btn-danger:not(:disabled):hover { background: rgba(248,113,113,0.15); }
+
+  /* Difficulty selector */
+  .difficulty-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .diff-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+
+  .diff-card:hover { border-color: var(--border-active); }
+  .diff-card.selected { border-color: var(--accent2); background: rgba(129,140,248,0.06); }
+
+  .diff-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+  .diff-name { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .diff-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+
+  /* Password section */
+  .password-wrap { position: relative; }
+  .password-wrap .input { padding-right: 3rem; }
+  .toggle-pw {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.15s;
+  }
+  .toggle-pw:hover { color: var(--text); }
+
+  .password-strength {
+    display: flex;
+    gap: 4px;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .strength-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 100px;
+    background: var(--border);
+    transition: background 0.3s ease;
+  }
+
+  .strength-weak .strength-bar:nth-child(1) { background: var(--danger); }
+  .strength-medium .strength-bar:nth-child(1),
+  .strength-medium .strength-bar:nth-child(2) { background: var(--warn); }
+  .strength-strong .strength-bar { background: var(--accent); }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .big-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+
+  .big-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    display: block;
+  }
+
+  .big-stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+
+  .chart-container {
+    position: relative;
+    height: 200px;
+  }
+
+  /* Toggle switch */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-info .toggle-title { font-size: 0.85rem; font-weight: 500; }
+  .toggle-info .toggle-desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+  
+  .switch {
+    width: 40px;
+    height: 22px;
+    background: var(--border);
+    border-radius: 100px;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    transition: background 0.25s ease;
+    flex-shrink: 0;
+  }
+  .switch.on { background: var(--accent); }
+  .switch::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.25s ease;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .switch.on::after { transform: translateX(18px); }
+
+  .success-banner {
+    background: rgba(110,231,183,0.1);
+    border: 1px solid rgba(110,231,183,0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    display: none;
+    animation: bannerIn 0.3s ease;
+  }
+  .success-banner.show { display: block; }
+  @keyframes bannerIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+  .error-banner {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--danger);
+    margin-bottom: 1rem;
+    display: none;
+    animation: bannerIn 0.3s ease;
+  }
+  .error-banner.show { display: block; }
+
+  .input-group {
+    margin-bottom: 1rem;
+  }
+
+  .input-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .attempt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .attempt-table th {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .attempt-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  .attempt-table tr:last-child td { border-bottom: none; }
+  .attempt-table .site-cell { color: var(--text); }
+
+  .onboarding-banner {
+    background: linear-gradient(135deg, rgba(110,231,183,0.08), rgba(129,140,248,0.08));
+    border: 1px solid rgba(110,231,183,0.15);
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .onboarding-banner h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .onboarding-banner p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🛡️</div>
+    <div>
+      <div class="logo-text">FocusGuard</div>
+      <div class="logo-sub">Stay Locked In</div>
+    </div>
+  </div>
+
+  <div class="nav-section">Main</div>
+  <a class="nav-item active" data-section="blocklist" href="#">
+    <span class="nav-icon">🚫</span> Blocklist
+  </a>
+  <a class="nav-item" data-section="challenges" href="#">
+    <span class="nav-icon">🔐</span> Challenges
+  </a>
+  <a class="nav-item" data-section="password" href="#">
+    <span class="nav-icon">🔑</span> Password
+  </a>
+
+  <div class="nav-section">Insights</div>
+  <a class="nav-item" data-section="stats" href="#">
+    <span class="nav-icon">📊</span> Statistics
+  </a>
+  <a class="nav-item" data-section="log" href="#">
+    <span class="nav-icon">📋</span> Attempt Log
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="status-indicator">
+      <div class="status-dot" id="sidebar-dot"></div>
+      <span id="sidebar-status" style="font-size:0.78rem;color:var(--muted)">Loading...</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Main content -->
+<main class="main">
+
+  <!-- BLOCKLIST SECTION -->
+  <div class="section active" id="section-blocklist">
+    <div class="section-header">
+      <h1>Blocklist Manager</h1>
+      <p>Add or remove websites from your blocklist. Blocking updates instantly.</p>
+    </div>
+
+    <div id="setup-banner" class="onboarding-banner" style="display:none">
+      <h3>👋 Welcome to FocusGuard!</h3>
+      <p>Your default blocklist is active. Visit the <strong>Password</strong> section to add a master password for extra protection, and the <strong>Challenges</strong> section to configure how hard it is to disable blocking.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Blocked Sites</div>
+          <div class="card-subtitle" id="blocklist-count">Loading...</div>
+        </div>
+        <button class="btn btn-danger" id="btn-reset-list">Reset to Defaults</button>
+      </div>
+      <div class="tags-container" id="tags-container"></div>
+      <div class="add-input-row">
+        <input class="input" type="text" id="add-domain" placeholder="e.g. twitter.com" autocomplete="off">
+        <div class="autocomplete-dropdown" id="autocomplete"></div>
+        <button class="btn btn-primary" id="btn-add-domain">Add Site</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Blocking Status</div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">Enable Blocking</div>
+          <div class="toggle-desc">Turn off to disable all blocking (requires challenge)</div>
+        </div>
+        <button class="switch on" id="blocking-toggle"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHALLENGES SECTION -->
+  <div class="section" id="section-challenges">
+    <div class="section-header">
+      <h1>Challenge Settings</h1>
+      <p>Configure how difficult it is to temporarily disable blocking. Harder = more friction = better focus.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Difficulty Level</div>
+      </div>
+      <div class="difficulty-grid" id="difficulty-grid">
+        <div class="diff-card" data-diff="easy">
+          <div class="diff-icon">🌱</div>
+          <div class="diff-name">Easy</div>
+          <div class="diff-desc">One math puzzle only</div>
+        </div>
+        <div class="diff-card selected" data-diff="medium">
+          <div class="diff-icon">🔥</div>
+          <div class="diff-name">Medium</div>
+          <div class="diff-desc">Math + quote typing + 30s timer</div>
+        </div>
+        <div class="diff-card" data-diff="hard">
+          <div class="diff-icon">💀</div>
+          <div class="diff-name">Hard</div>
+          <div class="diff-desc">All of the above + 60s timer + password</div>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <button class="btn btn-primary" id="save-difficulty">Save Difficulty</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Challenge Preview</div>
+        <div class="card-subtitle">Steps required to temporarily pause blocking</div>
+      </div>
+      <div id="challenge-preview" style="font-size:0.85rem;line-height:2;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <!-- PASSWORD SECTION -->
+  <div class="section" id="section-password">
+    <div class="section-header">
+      <h1>Master Password</h1>
+      <p>Protect your focus settings with a password. Anyone trying to modify the blocklist must enter this first.</p>
+    </div>
+
+    <div id="pw-success" class="success-banner">✓ Password saved successfully!</div>
+    <div id="pw-error-banner" class="error-banner">Passwords don't match. Try again.</div>
+
+    <div class="card" id="no-password-card">
+      <div class="card-title" style="margin-bottom:0.5rem">No Password Set</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.55">
+        Without a password, anyone can access the challenge flow. Adding a password makes it significantly harder to bypass your focus rules.
+      </p>
+      
+      <div class="input-group">
+        <label class="input-label">New Password</label>
+        <div class="password-wrap">
+          <input class="input" type="password" id="pw-new" placeholder="Choose a strong password...">
+          <button class="toggle-pw" data-target="pw-new">👁</button>
+        </div>
+        <div class="password-strength" id="pw-strength">
+          <div class="strength-bar"></div>
+          <div class="strength-bar"></div>
+          <div class="strength-bar"></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Confirm Password</label>
+        <div class="password-wrap">
+          <input class="input" type="password" id="pw-confirm" placeholder="Repeat your password...">
+          <button class="toggle-pw" data-target="pw-confirm">👁</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-set-password">Set Master Password 🔑</button>
+    </div>
+
+    <div class="card" id="has-password-card" style="display:none">
+      <div class="card-title" style="margin-bottom:0.5rem">Password Active ✓</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.55">
+        Your master password is set. You'll need to enter it before any challenge flow.
+      </p>
+      
+      <div class="input-group">
+        <label class="input-label">Current Password (to verify)</label>
+        <div class="password-wrap">
+          <input class="input" type="password" id="pw-current" placeholder="Enter current password...">
+          <button class="toggle-pw" data-target="pw-current">👁</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">New Password (leave blank to remove)</label>
+        <div class="password-wrap">
+          <input class="input" type="password" id="pw-new2" placeholder="New password or blank to remove...">
+          <button class="toggle-pw" data-target="pw-new2">👁</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-change-password">Update Password</button>
+      <button class="btn btn-danger" id="btn-remove-password" style="margin-left:0.5rem">Remove Password</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:0.5rem">Forgot Password?</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.55">
+        If you've forgotten your password, you can request a reset. For security, this takes <strong>24 hours</strong> to process. This is intentional.
+      </p>
+      <button class="btn btn-ghost" id="btn-request-reset" style="font-size:0.78rem">Request 24h Password Reset</button>
+      <div id="reset-status" style="font-size:0.75rem;color:var(--muted);margin-top:0.75rem;display:none"></div>
+    </div>
+  </div>
+
+  <!-- STATS SECTION -->
+  <div class="section" id="section-stats">
+    <div class="section-header">
+      <h1>Statistics</h1>
+      <p>See how often you've tried to access blocked content. Data is stored locally and never shared.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="big-stat">
+        <span class="big-stat-val" id="s-total">0</span>
+        <div class="big-stat-label">Total Blocks</div>
+      </div>
+      <div class="big-stat">
+        <span class="big-stat-val" id="s-today">0</span>
+        <div class="big-stat-label">Blocked Today</div>
+      </div>
+      <div class="big-stat">
+        <span class="big-stat-val" id="s-fails">0</span>
+        <div class="big-stat-label">Challenge Fails</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Blocked Attempts — Last 14 Days</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-attempts"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Challenge Outcomes</div>
+      </div>
+      <div class="chart-container" style="height:160px">
+        <canvas id="chart-challenges"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG SECTION -->
+  <div class="section" id="section-log">
+    <div class="section-header">
+      <h1>Attempt Log</h1>
+      <p>A record of the last 100 times you tried to access a blocked site.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Attempts</div>
+        <button class="btn btn-danger" id="btn-clear-log" style="font-size:0.75rem;padding:0.4rem 0.75rem">Clear Log</button>
+      </div>
+      <table class="attempt-table">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Time</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script src="options.js"></script>
+</body>
+</html>

@@ -21,15 +21,18 @@ A powerful Chrome extension that blocks distracting websites with a **friction-b
 <img width="960" height="407" alt="image" src="https://github.com/user-attachments/assets/af5f235a-bde2-4c14-9a19-af2f022412be" />
 <img width="958" height="408" alt="image" src="https://github.com/user-attachments/assets/235392de-5a94-4f43-96ea-bab87fce3f48" />
 <img width="960" height="407" alt="image" src="https://github.com/user-attachments/assets/ac73ab4e-b765-41fe-80d7-d3bbea5fa368" />
+<img width="922" height="420" alt="image" src="https://github.com/user-attachments/assets/a663f51c-d8e1-4b13-b0e1-5fe2b458a24c" />
+
 
 
 
 
 ## Installation
+NB : the previous update folders should be delted from your file explorer and the extension of the previous version also should be deleted before downloading this. 
 
 This extension is not on the Chrome Web Store. Install it manually in Developer Mode:
 
-1. Download by clicking the code option and from the dropdown click 'Download zip'
+1. Download by clicking the releases option (V.2.0) and click 'focus-guard-extension.zip'.
 2. extract the zip and open it. It will contain a folder.
 3. copy the folder and paste into a place which is easy to find.
 4. Go to `chrome://extensions` in Chrome

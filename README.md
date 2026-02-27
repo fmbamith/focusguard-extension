@@ -73,5 +73,5 @@ When you visit a blocked site, you're redirected to a full-screen motivational p
 ## License
 
 MIT
-## 🔒 Make FocusGuard Impossible to Uninstall (Windows Only)
+
 

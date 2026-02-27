@@ -73,3 +73,30 @@ When you visit a blocked site, you're redirected to a full-screen motivational p
 ## License
 
 MIT
+## 🔒 Make FocusGuard Impossible to Uninstall (Windows Only)
+
+If you really can't trust yourself to not remove the extension, you can force-install it via Windows Registry so the uninstall button gets greyed out permanently.
+
+### Step 1 — Get the Extension ID
+1. Go to `chrome://extensions`
+2. Enable Developer Mode
+3. Find FocusGuard and copy the long ID below the name (looks like `abcdefghijklmnopqrstuvwxyz123456`)
+
+### Step 2 — Run this script
+Open **Notepad**, paste the code below, replace `YOUR_EXTENSION_ID` with the ID you copied, save the file as `focusguard-lock.reg` (make sure it's `.reg` not `.reg.txt`)
+```reg
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist]
+"1"="YOUR_EXTENSION_ID;https://clients2.google.com/service/update2/crx"
+```
+
+### Step 3 — Apply it
+Double click the `.reg` file → click Yes → restart Chrome
+
+Now go to `chrome://extensions` and the Remove button on FocusGuard will be completely greyed out.
+
+### To undo it
+Open Registry Editor (`regedit` in start menu) → navigate to `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist` → delete the entry → restart Chrome
+
+> ⚠️ This only works on Windows and requires admin access on your PC
